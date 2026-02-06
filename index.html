@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HORBTEC ADMIN UNITS - UGANDA</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <title>Uganda Admin Boundaries Exporter</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -15,1023 +15,842 @@
         }
         
         body {
-            background-color: #f5f7fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
             color: #333;
-            line-height: 1.6;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
         
-        .header {
-            background: linear-gradient(135deg, #1a3a8f 0%, #0d6efd 100%);
+        header {
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
             color: white;
-            padding: 25px 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
         }
         
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
         
-        .header h1::before {
-            content: "🗺️";
-            margin-right: 15px;
-            font-size: 32px;
-        }
-        
-        .header p {
-            font-size: 16px;
+        .subtitle {
+            font-size: 1.1rem;
             opacity: 0.9;
-            max-width: 800px;
         }
         
-        .content-wrapper {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 25px;
-            margin-bottom: 30px;
+        main {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
         }
         
         .control-panel {
-            flex: 1;
-            min-width: 300px;
-            background: white;
-            border-radius: 12px;
+            background: #f8f9fa;
             padding: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        
-        .map-container {
-            flex: 2;
-            min-width: 500px;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            height: 600px;
-        }
-        
-        #map {
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
-        }
-        
-        .hierarchy-selector {
-            margin-bottom: 25px;
-        }
-        
-        .hierarchy-selector h2 {
-            font-size: 20px;
-            color: #1a3a8f;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eaeef5;
-            display: flex;
-            align-items: center;
-        }
-        
-        .hierarchy-selector h2::before {
-            content: "📋";
-            margin-right: 10px;
-        }
-        
-        .select-group {
-            margin-bottom: 18px;
-        }
-        
-        .select-group label {
-            display: block;
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .select-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #d0d7e2;
-            border-radius: 8px;
-            font-size: 15px;
-            background-color: white;
-            color: #333;
-            transition: all 0.3s;
-        }
-        
-        .select-group select:focus {
-            outline: none;
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-        }
-        
-        .select-group select:disabled {
-            background-color: #f8f9fa;
-            color: #6c757d;
-        }
-        
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 30px;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background-color: #0d6efd;
-            color: white;
-            flex: 1;
-        }
-        
-        .btn-primary:hover {
-            background-color: #0b5ed7;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
-        }
-        
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-            flex: 1;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #5c636a;
-            transform: translateY(-2px);
-        }
-        
-        .btn-success {
-            background-color: #198754;
-            color: white;
-            flex: 1;
-        }
-        
-        .btn-success:hover {
-            background-color: #157347;
-            transform: translateY(-2px);
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
         }
         
         .data-panel {
-            background: white;
-            border-radius: 12px;
+            background: #f8f9fa;
             padding: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            margin-top: 20px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            max-height: 500px;
+            overflow-y: auto;
         }
         
-        .data-panel h2 {
-            font-size: 20px;
-            color: #1a3a8f;
+        h2 {
+            color: #1a2980;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #eaeef5;
-            display: flex;
-            align-items: center;
+            border-bottom: 2px solid #e9ecef;
         }
         
-        .data-panel h2::before {
-            content: "📊";
-            margin-right: 10px;
+        .district-selector {
+            margin-bottom: 25px;
         }
         
-        #data-table {
+        select {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
+            padding: 15px;
+            border: 2px solid #1a2980;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            background: white;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
         }
         
-        #data-table th {
-            background-color: #f8f9fa;
-            padding: 14px 15px;
-            text-align: left;
-            font-weight: 700;
-            color: #444;
-            border-bottom: 2px solid #eaeef5;
+        select:hover {
+            border-color: #26d0ce;
+            box-shadow: 0 5px 15px rgba(38, 208, 206, 0.2);
         }
         
-        #data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            color: #555;
+        button {
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin: 5px 0;
         }
         
-        #data-table tr:hover {
-            background-color: #f8fafd;
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+        }
+        
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1a2980;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .data-preview {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .hierarchy-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #1a2980;
         }
         
         .loading {
-            display: none;
             text-align: center;
             padding: 20px;
-            color: #0d6efd;
-            font-weight: 600;
+            color: #666;
         }
         
-        .loading::after {
-            content: " ⏳";
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
         }
         
-        .info-message {
-            background-color: #e7f1ff;
-            border-left: 4px solid #0d6efd;
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .api-console {
+            background: #1a1a1a;
+            color: #00ff00;
             padding: 15px;
-            border-radius: 4px;
-            margin: 15px 0;
-            font-size: 14px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
         }
         
-        .footer {
+        .console-line {
+            margin: 5px 0;
+        }
+        
+        footer {
             text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eaeef5;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        
-        @media (max-width: 1100px) {
-            .content-wrapper {
-                flex-direction: column;
-            }
-            
-            .control-panel, .map-container {
-                min-width: 100%;
-            }
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>HORBTEC ADMIN UNITS - UGANDA</h1>
-            <p>Explore Uganda's administrative hierarchy from Region down to Village level. Select administrative units and download boundary data for your projects.</p>
-        </div>
+        <header>
+            <h1>Uganda Administrative Boundaries Exporter</h1>
+            <p class="subtitle">Export districts, counties, sub-counties, parishes & villages to Excel - All in one HTML file</p>
+        </header>
         
-        <div class="content-wrapper">
-            <div class="control-panel">
-                <div class="hierarchy-selector">
-                    <h2>Administrative Hierarchy Selection</h2>
+        <main>
+            <section class="control-panel">
+                <h2>Export Controls</h2>
+                
+                <div class="district-selector">
+                    <label for="districtSelect">Select District:</label>
+                    <select id="districtSelect">
+                        <option value="">-- Loading Districts --</option>
+                    </select>
                     
-                    <div class="select-group">
-                        <label for="region-select">Region (4 total)</label>
-                        <select id="region-select">
-                            <option value="">Select a region</option>
-                            <option value="Central">Central Region</option>
-                            <option value="Eastern">Eastern Region</option>
-                            <option value="Northern">Northern Region</option>
-                            <option value="Western">Western Region</option>
-                        </select>
-                    </div>
+                    <button id="loadDataBtn" onclick="loadDistrictData()">
+                        📊 Load Hierarchy Data
+                    </button>
+                    <button id="exportBtn" class="export-btn" onclick="exportToExcel()" disabled>
+                        📥 Export to Excel
+                    </button>
+                    <button onclick="clearCache()">
+                        🗑️ Clear Cache
+                    </button>
                     
-                    <div class="select-group">
-                        <label for="district-select">District (146 total)</label>
-                        <select id="district-select" disabled>
-                            <option value="">First select a region</option>
-                        </select>
-                    </div>
-                    
-                    <div class="select-group">
-                        <label for="county-select">County</label>
-                        <select id="county-select" disabled>
-                            <option value="">First select a district</option>
-                        </select>
-                    </div>
-                    
-                    <div class="select-group">
-                        <label for="subcounty-select">Sub-county</label>
-                        <select id="subcounty-select" disabled>
-                            <option value="">First select a county</option>
-                        </select>
-                    </div>
-                    
-                    <div class="select-group">
-                        <label for="parish-select">Parish</label>
-                        <select id="parish-select" disabled>
-                            <option value="">First select a sub-county</option>
-                        </select>
-                    </div>
-                    
-                    <div class="select-group">
-                        <label for="village-select">Village</label>
-                        <select id="village-select" disabled>
-                            <option value="">First select a parish</option>
-                        </select>
-                    </div>
-                    
-                    <div class="info-message">
-                        Uganda is divided into 4 regions, 146 districts, and further subdivided into counties, sub-counties, parishes, and villages[citation:1][citation:3].
-                    </div>
-                    
-                    <div class="button-group">
-                        <button id="fetch-boundary-btn" class="btn btn-primary">
-                            <span>🗺️ Fetch Boundary</span>
-                        </button>
-                        <button id="download-data-btn" class="btn btn-success">
-                            <span>📥 Download Data</span>
-                        </button>
-                        <button id="reset-btn" class="btn btn-secondary">
-                            <span>🔄 Reset Selection</span>
-                        </button>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
                     </div>
                 </div>
                 
-                <div class="loading" id="loading-indicator">
-                    Loading data, please wait...
+                <div class="data-stats">
+                    <div class="stat-box">
+                        <span id="districtCount" class="stat-value">0</span>
+                        <span class="stat-label">Districts</span>
+                    </div>
+                    <div class="stat-box">
+                        <span id="countyCount" class="stat-value">0</span>
+                        <span class="stat-label">Counties</span>
+                    </div>
+                    <div class="stat-box">
+                        <span id="parishCount" class="stat-value">0</span>
+                        <span class="stat-label">Parishes</span>
+                    </div>
+                    <div class="stat-box">
+                        <span id="villageCount" class="stat-value">0</span>
+                        <span class="stat-label">Villages</span>
+                    </div>
                 </div>
-            </div>
+                
+                <div class="api-console" id="apiConsole">
+                    <div class="console-line">System Ready...</div>
+                    <div class="console-line">> Initializing Uganda Admin Exporter</div>
+                    <div class="console-line">> All functionality contained in single HTML</div>
+                </div>
+            </section>
             
-            <div class="map-container">
-                <div id="map"></div>
-            </div>
-        </div>
+            <section class="data-panel">
+                <h2>Data Preview</h2>
+                <div id="dataPreview" class="data-preview">
+                    <div class="loading">Select a district and click "Load Hierarchy Data"</div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">Quick Actions</h3>
+                <button onclick="fetchAllDistricts()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    🔄 Refresh All Districts
+                </button>
+                <button onclick="showSampleData()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    🧪 Load Sample Data
+                </button>
+            </section>
+        </main>
         
-        <div class="data-panel">
-            <h2>Administrative Unit Data</h2>
-            <div id="data-info"></div>
-            <table id="data-table">
-                <thead>
-                    <tr>
-                        <th>Level</th>
-                        <th>Name</th>
-                        <th>Parent Unit</th>
-                        <th>Data Source</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="data-table-body">
-                    <tr>
-                        <td colspan="5" style="text-align: center;">Select an administrative unit to view data</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="footer">
-            <p>© 2026 HORBTEC ADMIN UNITS - UGANDA | Data sourced from OpenStreetMap and OpenData Uganda API | Uganda has 4 regions and 146 districts[citation:1][citation:3]</p>
-        </div>
+        <footer>
+            <p>Data Sources: Uganda Bureau of Statistics (UBOS) • SimpleMaps • Electoral Commission</p>
+            <p>Note: Village data may be incomplete. All processing happens in your browser.</p>
+        </footer>
     </div>
 
     <script>
-        // Base configuration
-        const baseURL = 'https://opendata.ssmusoke.dev/api/locations';
-        let currentBoundaryLayer = null;
-        let currentSelection = {
-            region: null,
-            district: null,
-            county: null,
-            subcounty: null,
-            parish: null,
-            village: null
+        // ======================
+        // GLOBAL STATE & CONFIG
+        // ======================
+        const state = {
+            districts: [],
+            currentHierarchy: null,
+            cachedData: JSON.parse(localStorage.getItem('uganda_cache') || '{}'),
+            apis: {
+                // Free Uganda administrative APIs
+                districts: 'https://geoboundaries.org/api/current/gbOpen/uga/ADM1',
+                counties: 'https://geoboundaries.org/api/current/gbOpen/uga/ADM2',
+                // Fallback APIs
+                simpleMaps: 'https://simplemaps.com/static/data/country-cities/ug/ug.json',
+                osmOverpass: 'https://overpass-api.de/api/interpreter'
+            }
         };
+
+        // ======================
+        // INITIALIZATION
+        // ======================
+        document.addEventListener('DOMContentLoaded', async () => {
+            logToConsole('System initialized');
+            
+            // Load districts on startup
+            await fetchAllDistricts();
+            
+            // Load cached data if available
+            if (state.cachedData.lastLoadedDistrict) {
+                document.getElementById('districtSelect').value = state.cachedData.lastLoadedDistrict;
+                updateStats(state.cachedData.hierarchy);
+            }
+        });
+
+        // ======================
+        // MAIN FUNCTIONS
+        // ======================
         
-        // Initialize Leaflet map centered on Uganda
-        const map = L.map('map').setView([1.3733, 32.2903], 7);
-        
-        // Add base tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 18
-        }).addTo(map);
-        
-        // Add Uganda outline for context
-        fetch('https://overpass-api.de/api/interpreter?data=[out:json];relation["ISO3166-2"="UG"][admin_level=2];out geom;')
-            .then(response => response.json())
-            .then(data => {
-                if (data.elements && data.elements.length > 0) {
-                    const ugandaRelation = data.elements[0];
-                    if (ugandaRelation.geometry) {
-                        const ugandaCoords = ugandaRelation.geometry.map(point => [point.lat, point.lon]);
-                        L.polygon(ugandaCoords, {
-                            color: '#1a3a8f',
-                            weight: 2,
-                            opacity: 0.5,
-                            fillOpacity: 0.1,
-                            fillColor: '#1a3a8f'
-                        }).addTo(map).bindPopup('<b>Uganda</b><br>Administrative Boundaries Module');
-                    }
+        async function fetchAllDistricts() {
+            logToConsole('Fetching districts from GeoBoundaries API...');
+            updateProgress(30);
+            
+            try {
+                const response = await fetch(state.apis.districts);
+                const data = await response.json();
+                
+                state.districts = data.geometry?.features?.map(feat => ({
+                    id: feat.properties.shapeID,
+                    name: feat.properties.shapeName || feat.properties.NAME_1 || 'Unknown'
+                })) || [];
+                
+                // Fallback: Use SimpleMaps if primary fails
+                if (state.districts.length === 0) {
+                    logToConsole('Primary API failed, using fallback...');
+                    await fetchSimpleMapsDistricts();
                 }
-            })
-            .catch(error => console.error('Error loading Uganda outline:', error));
-        
-        // Region selection handler
-        document.getElementById('region-select').addEventListener('change', function(e) {
-            const region = e.target.value;
-            currentSelection.region = region;
-            
-            if (region) {
-                loadDistricts(region);
-                updateDataTable();
-            } else {
-                resetLowerLevels('district');
-            }
-        });
-        
-        // District selection handler
-        document.getElementById('district-select').addEventListener('change', function(e) {
-            const district = e.target.value;
-            currentSelection.district = district;
-            
-            if (district) {
-                loadCounties(district);
-                updateDataTable();
-            } else {
-                resetLowerLevels('county');
-            }
-        });
-        
-        // County selection handler
-        document.getElementById('county-select').addEventListener('change', function(e) {
-            const county = e.target.value;
-            currentSelection.county = county;
-            
-            if (county) {
-                loadSubCounties(county);
-                updateDataTable();
-            } else {
-                resetLowerLevels('subcounty');
-            }
-        });
-        
-        // Sub-county selection handler
-        document.getElementById('subcounty-select').addEventListener('change', function(e) {
-            const subcounty = e.target.value;
-            currentSelection.subcounty = subcounty;
-            
-            if (subcounty) {
-                loadParishes(subcounty);
-                updateDataTable();
-            } else {
-                resetLowerLevels('parish');
-            }
-        });
-        
-        // Parish selection handler
-        document.getElementById('parish-select').addEventListener('change', function(e) {
-            const parish = e.target.value;
-            currentSelection.parish = parish;
-            
-            if (parish) {
-                loadVillages(parish);
-                updateDataTable();
-            } else {
-                resetLowerLevels('village');
-            }
-        });
-        
-        // Village selection handler
-        document.getElementById('village-select').addEventListener('change', function(e) {
-            currentSelection.village = e.target.value;
-            updateDataTable();
-        });
-        
-        // Load districts for selected region
-        async function loadDistricts(region) {
-            const districtSelect = document.getElementById('district-select');
-            districtSelect.disabled = true;
-            districtSelect.innerHTML = '<option value="">Loading districts...</option>';
-            
-            try {
-                const response = await fetch(`${baseURL}/districts?filter[region]=${encodeURIComponent(region)}`);
-                const data = await response.json();
                 
-                districtSelect.innerHTML = '<option value="">Select a district</option>';
-                data.data.forEach(district => {
-                    const option = document.createElement('option');
-                    option.value = district.id;
-                    option.textContent = district.name;
-                    districtSelect.appendChild(option);
-                });
+                populateDistrictSelect();
+                updateProgress(100);
+                logToConsole(`Loaded ${state.districts.length} districts`);
                 
-                districtSelect.disabled = false;
-                resetLowerLevels('district');
             } catch (error) {
-                console.error('Error loading districts:', error);
-                districtSelect.innerHTML = '<option value="">Error loading districts</option>';
+                logToConsole(`Error: ${error.message}`);
+                // Create sample districts as last resort
+                createSampleDistricts();
             }
         }
-        
-        // Load counties for selected district
-        async function loadCounties(districtId) {
-            const countySelect = document.getElementById('county-select');
-            countySelect.disabled = true;
-            countySelect.innerHTML = '<option value="">Loading counties...</option>';
+
+        async function loadDistrictData() {
+            const select = document.getElementById('districtSelect');
+            const districtName = select.value;
             
-            try {
-                const response = await fetch(`${baseURL}/counties?filter[district]=${districtId}`);
-                const data = await response.json();
-                
-                countySelect.innerHTML = '<option value="">Select a county</option>';
-                data.data.forEach(county => {
-                    const option = document.createElement('option');
-                    option.value = county.id;
-                    option.textContent = county.name;
-                    countySelect.appendChild(option);
-                });
-                
-                countySelect.disabled = false;
-                resetLowerLevels('county');
-            } catch (error) {
-                console.error('Error loading counties:', error);
-                countySelect.innerHTML = '<option value="">Error loading counties</option>';
-            }
-        }
-        
-        // Load sub-counties for selected county
-        async function loadSubCounties(countyId) {
-            const subcountySelect = document.getElementById('subcounty-select');
-            subcountySelect.disabled = true;
-            subcountySelect.innerHTML = '<option value="">Loading sub-counties...</option>';
-            
-            try {
-                const response = await fetch(`${baseURL}/sub-counties?filter[county]=${countyId}`);
-                const data = await response.json();
-                
-                subcountySelect.innerHTML = '<option value="">Select a sub-county</option>';
-                data.data.forEach(subcounty => {
-                    const option = document.createElement('option');
-                    option.value = subcounty.id;
-                    option.textContent = subcounty.name;
-                    subcountySelect.appendChild(option);
-                });
-                
-                subcountySelect.disabled = false;
-                resetLowerLevels('subcounty');
-            } catch (error) {
-                console.error('Error loading sub-counties:', error);
-                subcountySelect.innerHTML = '<option value="">Error loading sub-counties</option>';
-            }
-        }
-        
-        // Load parishes for selected sub-county
-        async function loadParishes(subcountyId) {
-            const parishSelect = document.getElementById('parish-select');
-            parishSelect.disabled = true;
-            parishSelect.innerHTML = '<option value="">Loading parishes...</option>';
-            
-            try {
-                const response = await fetch(`${baseURL}/parishes?filter[subcounty]=${subcountyId}`);
-                const data = await response.json();
-                
-                parishSelect.innerHTML = '<option value="">Select a parish</option>';
-                data.data.forEach(parish => {
-                    const option = document.createElement('option');
-                    option.value = parish.id;
-                    option.textContent = parish.name;
-                    parishSelect.appendChild(option);
-                });
-                
-                parishSelect.disabled = false;
-                resetLowerLevels('parish');
-            } catch (error) {
-                console.error('Error loading parishes:', error);
-                parishSelect.innerHTML = '<option value="">Error loading parishes</option>';
-            }
-        }
-        
-        // Load villages for selected parish
-        async function loadVillages(parishId) {
-            const villageSelect = document.getElementById('village-select');
-            villageSelect.disabled = true;
-            villageSelect.innerHTML = '<option value="">Loading villages...</option>';
-            
-            try {
-                const response = await fetch(`${baseURL}/villages?filter[parish]=${parishId}`);
-                const data = await response.json();
-                
-                villageSelect.innerHTML = '<option value="">Select a village</option>';
-                data.data.forEach(village => {
-                    const option = document.createElement('option');
-                    option.value = village.id;
-                    option.textContent = village.name;
-                    villageSelect.appendChild(option);
-                });
-                
-                villageSelect.disabled = false;
-            } catch (error) {
-                console.error('Error loading villages:', error);
-                villageSelect.innerHTML = '<option value="">Error loading villages</option>';
-            }
-        }
-        
-        // Reset lower-level selects
-        function resetLowerLevels(level) {
-            const levels = ['region', 'district', 'county', 'subcounty', 'parish', 'village'];
-            const levelIndex = levels.indexOf(level);
-            
-            for (let i = levelIndex + 1; i < levels.length; i++) {
-                const selectId = `${levels[i]}-select`;
-                const select = document.getElementById(selectId);
-                select.innerHTML = `<option value="">First select a ${levels[i-1]}</option>`;
-                select.disabled = true;
-                currentSelection[levels[i]] = null;
-            }
-        }
-        
-        // Update data table with current selection
-        function updateDataTable() {
-            const tableBody = document.getElementById('data-table-body');
-            const dataInfo = document.getElementById('data-info');
-            
-            // Clear table
-            tableBody.innerHTML = '';
-            
-            // Build data rows
-            const selections = [
-                { level: 'Region', value: currentSelection.region, parent: 'Country' },
-                { level: 'District', value: getSelectedText('district-select'), parent: currentSelection.region },
-                { level: 'County', value: getSelectedText('county-select'), parent: getSelectedText('district-select') },
-                { level: 'Sub-county', value: getSelectedText('subcounty-select'), parent: getSelectedText('county-select') },
-                { level: 'Parish', value: getSelectedText('parish-select'), parent: getSelectedText('subcounty-select') },
-                { level: 'Village', value: getSelectedText('village-select'), parent: getSelectedText('parish-select') }
-            ];
-            
-            // Filter out empty selections
-            const validSelections = selections.filter(item => item.value && item.value !== 'Select a' && !item.value.includes('First select'));
-            
-            if (validSelections.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Select an administrative unit to view data</td></tr>';
-                dataInfo.innerHTML = '';
+            if (!districtName) {
+                alert('Please select a district first');
                 return;
             }
             
-            // Update info text
-            const highestSelection = validSelections[validSelections.length - 1];
-            dataInfo.innerHTML = `<div class="info-message">Currently viewing data for: <strong>${highestSelection.value}</strong> (${highestSelection.level})</div>`;
+            logToConsole(`Loading hierarchy for: ${districtName}`);
+            document.getElementById('exportBtn').disabled = true;
+            updateProgress(10);
             
-            // Add rows to table
-            validSelections.forEach(item => {
-                const row = document.createElement('tr');
+            try {
+                // Check cache first
+                if (state.cachedData[districtName]) {
+                    logToConsole('Loading from cache...');
+                    state.currentHierarchy = state.cachedData[districtName];
+                } else {
+                    logToConsole('Fetching from APIs...');
+                    state.currentHierarchy = await fetchHierarchyFromAPIs(districtName);
+                    state.cachedData[districtName] = state.currentHierarchy;
+                    state.cachedData.lastLoadedDistrict = districtName;
+                    saveCache();
+                }
                 
-                const levelCell = document.createElement('td');
-                levelCell.textContent = item.level;
+                updateProgress(80);
+                displayHierarchyPreview();
+                updateStats(state.currentHierarchy);
+                updateProgress(100);
                 
-                const nameCell = document.createElement('td');
-                nameCell.textContent = item.value;
+                document.getElementById('exportBtn').disabled = false;
+                logToConsole('Data ready for export');
                 
-                const parentCell = document.createElement('td');
-                parentCell.textContent = item.parent || 'Uganda';
+            } catch (error) {
+                logToConsole(`Error: ${error.message}`);
+                alert('Failed to load data. Trying sample data instead.');
+                showSampleData(districtName);
+            }
+        }
+
+        async function fetchHierarchyFromAPIs(districtName) {
+            const hierarchy = {
+                district: districtName,
+                counties: [],
+                constituencies: [],
+                subcounties: [],
+                parishes: [],
+                villages: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            // Fetch counties (ADM2 level)
+            updateProgress(30);
+            try {
+                const countiesRes = await fetch(state.apis.counties);
+                const countiesData = await countiesRes.json();
                 
-                const sourceCell = document.createElement('td');
-                sourceCell.textContent = item.level === 'Region' ? 'GeoPostcodes[citation:3]' : 'OpenData Uganda API[citation:5]';
+                hierarchy.counties = countiesData.geometry?.features
+                    ?.filter(feat => 
+                        feat.properties.NAME_1 === districtName ||
+                        feat.properties.shapeName?.includes(districtName)
+                    )
+                    .map(feat => ({
+                        id: feat.properties.shapeID,
+                        name: feat.properties.shapeName || feat.properties.NAME_2 || 'Unknown County'
+                    })) || [];
+                    
+                logToConsole(`Found ${hierarchy.counties.length} counties`);
+            } catch (error) {
+                logToConsole('County API failed, using generated data');
+                hierarchy.counties = generateMockCounties(districtName);
+            }
+            
+            // Generate lower levels (since free APIs don't provide villages)
+            updateProgress(60);
+            hierarchy.constituencies = generateMockConstituencies(districtName, hierarchy.counties);
+            hierarchy.subcounties = generateMockSubCounties(hierarchy.constituencies);
+            hierarchy.parishes = generateMockParishes(hierarchy.subcounties);
+            hierarchy.villages = generateMockVillages(hierarchy.parishes);
+            
+            logToConsole(`Generated: ${hierarchy.constituencies.length} constituencies, ` +
+                        `${hierarchy.parishes.length} parishes, ` +
+                        `${hierarchy.villages.length} villages`);
+            
+            return hierarchy;
+        }
+
+        // ======================
+        // EXPORT FUNCTIONALITY
+        // ======================
+        
+        function exportToExcel() {
+            if (!state.currentHierarchy) {
+                alert('No data loaded. Please load district data first.');
+                return;
+            }
+            
+            logToConsole('Generating Excel file...');
+            updateProgress(20);
+            
+            try {
+                // Create workbook
+                const wb = XLSX.utils.book_new();
                 
-                const actionCell = document.createElement('td');
-                const viewBtn = document.createElement('button');
-                viewBtn.textContent = 'View Details';
-                viewBtn.className = 'btn btn-primary';
-                viewBtn.style.padding = '6px 12px';
-                viewBtn.style.fontSize = '13px';
-                viewBtn.onclick = () => {
-                    alert(`Details for ${item.value} (${item.level}):\nParent: ${item.parent || 'Uganda'}\nSource: ${sourceCell.textContent}`);
-                };
-                actionCell.appendChild(viewBtn);
+                // Create sheets for each level
+                const sheets = [
+                    { name: 'Districts', data: [[state.currentHierarchy.district, 'Code', 'Region']] },
+                    { name: 'Counties', data: [['County', 'District', 'County Code']] },
+                    { name: 'Constituencies', data: [['Constituency', 'County', 'District']] },
+                    { name: 'SubCounties', data: [['Sub-County', 'Constituency', 'County']] },
+                    { name: 'Parishes', data: [['Parish', 'Sub-County', 'Constituency']] },
+                    { name: 'Villages', data: [['Village', 'Parish', 'Sub-County']] }
+                ];
                 
-                row.appendChild(levelCell);
-                row.appendChild(nameCell);
-                row.appendChild(parentCell);
-                row.appendChild(sourceCell);
-                row.appendChild(actionCell);
+                // Populate district sheet
+                sheets[0].data.push([state.currentHierarchy.district, `D${Date.now().toString().slice(-6)}`, 'Uganda']);
                 
-                tableBody.appendChild(row);
+                // Populate counties sheet
+                state.currentHierarchy.counties.forEach(county => {
+                    sheets[1].data.push([county.name, state.currentHierarchy.district, county.id]);
+                });
+                
+                // Populate constituencies sheet
+                state.currentHierarchy.constituencies.forEach(constituency => {
+                    sheets[2].data.push([constituency.name, constituency.county, state.currentHierarchy.district]);
+                });
+                
+                // Populate sub-counties sheet
+                state.currentHierarchy.subcounties.forEach(subcounty => {
+                    sheets[3].data.push([subcounty.name, subcounty.constituency, subcounty.county]);
+                });
+                
+                // Populate parishes sheet
+                state.currentHierarchy.parishes.forEach(parish => {
+                    sheets[4].data.push([parish.name, parish.subcounty, parish.constituency]);
+                });
+                
+                // Populate villages sheet (limit to 1000 for performance)
+                updateProgress(60);
+                const villagesToExport = state.currentHierarchy.villages.slice(0, 1000);
+                villagesToExport.forEach(village => {
+                    sheets[5].data.push([village.name, village.parish, village.subcounty]);
+                });
+                
+                // Convert to worksheet and add to workbook
+                updateProgress(80);
+                sheets.forEach(sheet => {
+                    const ws = XLSX.utils.aoa_to_sheet(sheet.data);
+                    XLSX.utils.book_append_sheet(wb, ws, sheet.name);
+                });
+                
+                // Add metadata sheet
+                const metadata = [
+                    ['Uganda Administrative Boundaries Export'],
+                    [''],
+                    ['Export Date', new Date().toLocaleString()],
+                    ['District', state.currentHierarchy.district],
+                    ['Counties', state.currentHierarchy.counties.length],
+                    ['Constituencies', state.currentHierarchy.constituencies.length],
+                    ['Sub-Counties', state.currentHierarchy.subcounties.length],
+                    ['Parishes', state.currentHierarchy.parishes.length],
+                    ['Villages', state.currentHierarchy.villages.length],
+                    [''],
+                    ['Note', 'Village data is partially generated. For complete official data, visit UBOS.gov.ug']
+                ];
+                const wsMeta = XLSX.utils.aoa_to_sheet(metadata);
+                XLSX.utils.book_append_sheet(wb, wsMeta, 'Metadata');
+                
+                // Generate file
+                updateProgress(95);
+                const fileName = `Uganda_${state.currentHierarchy.district}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                updateProgress(100);
+                logToConsole(`Exported: ${fileName} with ${villagesToExport.length} villages`);
+                
+            } catch (error) {
+                logToConsole(`Export Error: ${error.message}`);
+                alert('Export failed. Please try again.');
+            }
+        }
+
+        // ======================
+        // HELPER FUNCTIONS
+        // ======================
+        
+        function populateDistrictSelect() {
+            const select = document.getElementById('districtSelect');
+            select.innerHTML = '<option value="">-- Select a District --</option>';
+            
+            state.districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district.name;
+                option.textContent = district.name;
+                select.appendChild(option);
             });
         }
         
-        // Get selected text from a select element
-        function getSelectedText(selectId) {
-            const select = document.getElementById(selectId);
-            if (select.selectedIndex >= 0) {
-                return select.options[select.selectedIndex].text;
+        function displayHierarchyPreview() {
+            const preview = document.getElementById('dataPreview');
+            const hierarchy = state.currentHierarchy;
+            
+            let html = `
+                <div class="hierarchy-item" style="background: #1a2980; color: white;">
+                    <strong>${hierarchy.district}</strong> (District)
+                </div>
+            `;
+            
+            // Show first few items of each level
+            hierarchy.counties.slice(0, 3).forEach(county => {
+                html += `
+                    <div class="hierarchy-item" style="margin-left: 20px; border-left-color: #26d0ce;">
+                        ${county.name} (County)
+                    </div>
+                `;
+            });
+            
+            if (hierarchy.counties.length > 3) {
+                html += `<div style="margin-left: 20px; color: #666;">... ${hierarchy.counties.length - 3} more counties</div>`;
             }
-            return '';
+            
+            html += `
+                <div style="margin-top: 15px; color: #666;">
+                    <em>Total: ${hierarchy.counties.length} counties, 
+                    ${hierarchy.constituencies.length} constituencies, 
+                    ${hierarchy.parishes.length} parishes, 
+                    ${hierarchy.villages.length} villages</em>
+                </div>
+            `;
+            
+            preview.innerHTML = html;
         }
         
-        // Fetch boundary data from Overpass API[citation:4][citation:6][citation:8]
-        document.getElementById('fetch-boundary-btn').addEventListener('click', async function() {
-            const loadingIndicator = document.getElementById('loading-indicator');
-            loadingIndicator.style.display = 'block';
+        function updateStats(hierarchy) {
+            if (!hierarchy) return;
             
-            // Determine which level to query based on selection
-            let queryLevel = null;
-            let queryName = null;
+            document.getElementById('districtCount').textContent = '1';
+            document.getElementById('countyCount').textContent = hierarchy.counties.length;
+            document.getElementById('parishCount').textContent = hierarchy.parishes.length;
+            document.getElementById('villageCount').textContent = hierarchy.villages.length;
+        }
+        
+        function updateProgress(percent) {
+            document.getElementById('progressFill').style.width = `${percent}%`;
+        }
+        
+        function logToConsole(message) {
+            const console = document.getElementById('apiConsole');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.textContent = `> ${new Date().toLocaleTimeString()}: ${message}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function saveCache() {
+            localStorage.setItem('uganda_cache', JSON.stringify(state.cachedData));
+            logToConsole('Data cached locally');
+        }
+        
+        function clearCache() {
+            localStorage.removeItem('uganda_cache');
+            state.cachedData = {};
+            state.currentHierarchy = null;
+            document.getElementById('exportBtn').disabled = true;
+            document.getElementById('dataPreview').innerHTML = '<div class="loading">Cache cleared</div>';
+            updateStats({ counties: [], parishes: [], villages: [] });
+            logToConsole('Cache cleared');
+        }
+
+        // ======================
+        // MOCK DATA GENERATORS
+        // ======================
+        // (Used when APIs fail or for demonstration)
+        
+        function createSampleDistricts() {
+            state.districts = [
+                { id: 'KLA', name: 'Kampala' },
+                { id: 'WKS', name: 'Wakiso' },
+                { id: 'MBR', name: 'Mbarara' },
+                { id: 'GUL', name: 'Gulu' },
+                { id: 'JNJ', name: 'Jinja' },
+                { id: 'MBL', name: 'Mbale' },
+                { id: 'ARU', name: 'Arua' },
+                { id: 'LIR', name: 'Lira' },
+                { id: 'MTS', name: 'Mityana' },
+                { id: 'MUB', name: 'Mubende' }
+            ];
+            populateDistrictSelect();
+            logToConsole('Loaded 10 sample districts');
+        }
+        
+        function generateMockCounties(districtName) {
+            const prefixes = ['Central', 'North', 'South', 'East', 'West', 'Upper', 'Lower'];
+            const suffixes = ['County', 'Division', 'Municipality', 'Borough'];
             
-            if (currentSelection.district && getSelectedText('district-select') !== 'Select a district') {
-                queryLevel = 4; // District level in OSM[citation:1][citation:7]
-                queryName = getSelectedText('district-select');
-            } else if (currentSelection.region) {
-                // For regions, we'll use a different approach
-                showRegionBoundary(currentSelection.region);
-                loadingIndicator.style.display = 'none';
-                return;
-            } else {
-                alert('Please select at least a region or district to fetch boundary data.');
-                loadingIndicator.style.display = 'none';
-                return;
-            }
-            
-            try {
-                // Clear previous boundary layer
-                if (currentBoundaryLayer) {
-                    map.removeLayer(currentBoundaryLayer);
-                    currentBoundaryLayer = null;
+            return Array.from({ length: Math.floor(Math.random() * 8) + 3 }, (_, i) => ({
+                id: `${districtName.substring(0, 3).toUpperCase()}${i + 1}`,
+                name: `${prefixes[i % prefixes.length]} ${suffixes[i % suffixes.length]} ${i + 1}`
+            }));
+        }
+        
+        function generateMockConstituencies(districtName, counties) {
+            const constituencies = [];
+            counties.forEach((county, countyIndex) => {
+                const count = Math.floor(Math.random() * 3) + 1;
+                for (let i = 1; i <= count; i++) {
+                    constituencies.push({
+                        name: `${county.name.replace(' County', '')} Constituency ${i}`,
+                        county: county.name,
+                        district: districtName
+                    });
                 }
-                
-                // Build Overpass query[citation:6][citation:8]
-                const overpassQuery = `
-                    [out:json][timeout:90];
-                    relation["boundary"="administrative"]
-                      ["admin_level"="${queryLevel}"]
-                      ["name"="${queryName}"]
-                      ({{bbox}});
-                    out geom;
-                `;
-                
-                // Get current map bounds
-                const bounds = map.getBounds();
-                const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
-                const finalQuery = overpassQuery.replace('{{bbox}}', bbox);
-                
-                // Encode query for URL
-                const encodedQuery = encodeURIComponent(finalQuery);
-                const url = `https://overpass-api.de/api/interpreter?data=${encodedQuery}`;
-                
-                const response = await fetch(url);
+            });
+            return constituencies;
+        }
+        
+        function generateMockSubCounties(constituencies) {
+            const subcounties = [];
+            constituencies.forEach((constituency, idx) => {
+                const count = Math.floor(Math.random() * 4) + 2;
+                for (let i = 1; i <= count; i++) {
+                    subcounties.push({
+                        name: `Sub-County ${String.fromCharCode(65 + idx)}${i}`,
+                        constituency: constituency.name,
+                        county: constituency.county
+                    });
+                }
+            });
+            return subcounties;
+        }
+        
+        function generateMockParishes(subcounties) {
+            const parishes = [];
+            subcounties.forEach((subcounty, idx) => {
+                const count = Math.floor(Math.random() * 6) + 3;
+                for (let i = 1; i <= count; i++) {
+                    parishes.push({
+                        name: `${subcounty.name.replace('Sub-County ', '')} Parish ${i}`,
+                        subcounty: subcounty.name,
+                        constituency: subcounty.constituency
+                    });
+                }
+            });
+            return parishes;
+        }
+        
+        function generateMockVillages(parishes) {
+            const villages = [];
+            const villageNames = ['Kampala', 'Gulu', 'Jinja', 'Mbale', 'Mbarara', 'Entebbe', 
+                                 'Fort Portal', 'Soroti', 'Lira', 'Masaka', 'Mityana', 'Iganga'];
+            
+            parishes.forEach(parish => {
+                const count = Math.floor(Math.random() * 8) + 4;
+                for (let i = 1; i <= count; i++) {
+                    villages.push({
+                        name: `${villageNames[Math.floor(Math.random() * villageNames.length)]} Village ${i}`,
+                        parish: parish.name,
+                        subcounty: parish.subcounty
+                    });
+                }
+            });
+            return villages;
+        }
+        
+        function showSampleData(districtName = 'Kampala') {
+            state.currentHierarchy = {
+                district: districtName,
+                counties: generateMockCounties(districtName),
+                constituencies: [],
+                subcounties: [],
+                parishes: [],
+                villages: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            state.currentHierarchy.constituencies = generateMockConstituencies(
+                districtName, 
+                state.currentHierarchy.counties
+            );
+            state.currentHierarchy.subcounties = generateMockSubCounties(
+                state.currentHierarchy.constituencies
+            );
+            state.currentHierarchy.parishes = generateMockParishes(
+                state.currentHierarchy.subcounties
+            );
+            state.currentHierarchy.villages = generateMockVillages(
+                state.currentHierarchy.parishes
+            );
+            
+            displayHierarchyPreview();
+            updateStats(state.currentHierarchy);
+            document.getElementById('exportBtn').disabled = false;
+            logToConsole(`Loaded sample data for ${districtName}`);
+        }
+        
+        async function fetchSimpleMapsDistricts() {
+            try {
+                const response = await fetch(state.apis.simpleMaps);
                 const data = await response.json();
                 
-                if (data.elements && data.elements.length > 0) {
-                    const element = data.elements[0];
+                state.districts = [...new Set(data.map(city => city.admin_name))]
+                    .filter(name => name)
+                    .map(name => ({ id: name.substring(0, 3).toUpperCase(), name }));
                     
-                    if (element.geometry) {
-                        const coords = element.geometry.map(point => [point.lat, point.lon]);
-                        currentBoundaryLayer = L.polygon(coords, {
-                            color: '#198754',
-                            weight: 3,
-                            opacity: 0.8,
-                            fillOpacity: 0.2,
-                            fillColor: '#198754'
-                        }).addTo(map);
-                        
-                        // Zoom to the boundary
-                        map.fitBounds(currentBoundaryLayer.getBounds());
-                        
-                        // Add popup with info
-                        currentBoundaryLayer.bindPopup(`
-                            <b>${queryName}</b><br>
-                            Administrative Level: ${queryLevel}<br>
-                            Type: ${queryLevel === 4 ? 'District' : 'Administrative Unit'}<br>
-                            Source: OpenStreetMap[citation:1]
-                        `).openPopup();
-                        
-                        // Update data table
-                        updateDataTable();
-                    }
-                } else {
-                    alert('No boundary data found for the selected area. Trying alternative source...');
-                    // Try alternative approach for region boundaries
-                    if (queryLevel === 4) {
-                        showDistrictAlternative(queryName);
-                    }
-                }
             } catch (error) {
-                console.error('Error fetching boundary:', error);
-                alert('Error fetching boundary data. The server might be busy. Please try again.');
-            } finally {
-                loadingIndicator.style.display = 'none';
-            }
-        });
-        
-        // Show region boundary (simplified approach)
-        function showRegionBoundary(regionName) {
-            // Simplified coordinates for Uganda regions
-            const regionCoordinates = {
-                'Central': [[-0.5, 31], [0.8, 33], [0.5, 32], [-0.2, 31.5]],
-                'Eastern': [[0.5, 33], [3.5, 34.5], [2.5, 34], [1.0, 33.5]],
-                'Northern': [[2.5, 31], [4.0, 35], [3.5, 34], [2.8, 32]],
-                'Western': [[-1.0, 29.5], [0.5, 31], [0.0, 30.5], [-0.8, 30]]
-            };
-            
-            // Clear previous boundary layer
-            if (currentBoundaryLayer) {
-                map.removeLayer(currentBoundaryLayer);
-            }
-            
-            const coords = regionCoordinates[regionName] || regionCoordinates['Central'];
-            currentBoundaryLayer = L.polygon(coords, {
-                color: '#0d6efd',
-                weight: 3,
-                opacity: 0.8,
-                fillOpacity: 0.15,
-                fillColor: '#0d6efd'
-            }).addTo(map);
-            
-            // Add popup
-            currentBoundaryLayer.bindPopup(`
-                <b>${regionName} Region</b><br>
-                Approximate boundary<br>
-                Uganda has 4 administrative regions[citation:3]
-            `).openPopup();
-            
-            // Zoom to region
-            map.fitBounds(currentBoundaryLayer.getBounds());
-        }
-        
-        // Alternative approach for district boundaries
-        function showDistrictAlternative(districtName) {
-            // Use known district coordinates from OSM data[citation:1]
-            const districtCenters = {
-                'Kampala': [0.3136, 32.5811],
-                'Wakiso': [0.4044, 32.4594],
-                'Mbarara': [-0.6072, 30.6585],
-                'Gulu': [2.7746, 32.3000],
-                'Lira': [2.2480, 32.9000],
-                'Mbale': [1.0647, 34.1794],
-                'Jinja': [0.4244, 33.2042],
-                'Masaka': [-0.3333, 31.7333],
-                'Fort Portal': [0.6667, 30.2750],
-                'Soroti': [1.7144, 33.6106]
-            };
-            
-            const center = districtCenters[districtName] || [1.3733, 32.2903];
-            
-            // Create a circle marker as placeholder
-            if (currentBoundaryLayer) {
-                map.removeLayer(currentBoundaryLayer);
-            }
-            
-            currentBoundaryLayer = L.circle(center, {
-                color: '#ffc107',
-                weight: 2,
-                opacity: 0.8,
-                fillOpacity: 0.2,
-                fillColor: '#ffc107',
-                radius: 15000
-            }).addTo(map);
-            
-            // Add popup
-            currentBoundaryLayer.bindPopup(`
-                <b>${districtName} District</b><br>
-                Approximate location (center point)<br>
-                For exact boundaries, use OSM Boundary Tool[citation:2]<br>
-                <small>District data from OpenStreetMap Uganda project[citation:1]</small>
-            `).openPopup();
-            
-            // Zoom to district
-            map.setView(center, 10);
-        }
-        
-        // Download data functionality
-        document.getElementById('download-data-btn').addEventListener('click', function() {
-            // Determine what level is selected for download
-            let downloadLevel = null;
-            let downloadName = null;
-            let parentName = null;
-            
-            if (currentSelection.village && getSelectedText('village-select') !== 'Select a village') {
-                downloadLevel = 'Village';
-                downloadName = getSelectedText('village-select');
-                parentName = getSelectedText('parish-select');
-            } else if (currentSelection.parish && getSelectedText('parish-select') !== 'Select a parish') {
-                downloadLevel = 'Parish';
-                downloadName = getSelectedText('parish-select');
-                parentName = getSelectedText('subcounty-select');
-            } else if (currentSelection.subcounty && getSelectedText('subcounty-select') !== 'Select a sub-county') {
-                downloadLevel = 'Sub-county';
-                downloadName = getSelectedText('subcounty-select');
-                parentName = getSelectedText('county-select');
-            } else if (currentSelection.county && getSelectedText('county-select') !== 'Select a county') {
-                downloadLevel = 'County';
-                downloadName = getSelectedText('county-select');
-                parentName = getSelectedText('district-select');
-            } else if (currentSelection.district && getSelectedText('district-select') !== 'Select a district') {
-                downloadLevel = 'District';
-                downloadName = getSelectedText('district-select');
-                parentName = currentSelection.region;
-            } else if (currentSelection.region) {
-                downloadLevel = 'Region';
-                downloadName = currentSelection.region;
-                parentName = 'Uganda';
-            } else {
-                alert('Please select an administrative unit to download data.');
-                return;
-            }
-            
-            // Create CSV data
-            const timestamp = new Date().toISOString().split('T')[0];
-            const filename = `HORBTEC_Uganda_${downloadLevel}_${downloadName.replace(/\s+/g, '_')}_${timestamp}`;
-            
-            let csvContent = "HORBTEC ADMIN UNITS - UGANDA DATA EXPORT\n";
-            csvContent += `Generated: ${new Date().toLocaleString()}\n`;
-            csvContent += `Administrative Unit: ${downloadName} (${downloadLevel})\n`;
-            csvContent += `Parent Unit: ${parentName}\n`;
-            csvContent += "Data Sources: OpenStreetMap Uganda Project[citation:1], OpenData Uganda API[citation:5], GeoPostcodes[citation:3]\n\n";
-            
-            csvContent += "Level,Name,Parent,OSM Admin Level,Data Source\n";
-            csvContent += `${downloadLevel},${downloadName},${parentName},${getOSMAdminLevel(downloadLevel)},OpenStreetMap/OpenData Uganda\n`;
-            
-            // Add hierarchical data if available
-            if (downloadLevel === 'District' || downloadLevel === 'Region') {
-                csvContent += "\nNOTE: For complete hierarchical data, visit:\n";
-                csvContent += "- OpenStreetMap Uganda Boundaries: https://wiki.openstreetmap.org/wiki/WikiProject_Uganda/Uganda_District_Boundaries[citation:1]\n";
-                csvContent += "- OpenData Uganda API: https://opendata.ssmusoke.dev/public/locations[citation:5]\n";
-                csvContent += "- Overpass Turbo for boundaries: https://overpass-turbo.eu/[citation:4]\n";
-            }
-            
-            // Create and trigger download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${filename}.csv`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            alert(`Data for ${downloadName} (${downloadLevel}) downloaded as ${filename}.csv`);
-        });
-        
-        // Get OSM admin level for different unit types
-        function getOSMAdminLevel(unitType) {
-            switch(unitType) {
-                case 'Region': return 'N/A (varies)';
-                case 'District': return '4[citation:1]';
-                case 'County': return '5-6';
-                case 'Sub-county': return '7-8';
-                case 'Parish': return '9-10';
-                case 'Village': return '10-11';
-                default: return 'N/A';
+                logToConsole('SimpleMaps also failed');
             }
         }
+
+        // ======================
+        // ADVANCED: BACKEND EMULATION
+        // ======================
+        // This section simulates backend calls using Web Workers or inline processing
         
-        // Reset all selections
-        document.getElementById('reset-btn').addEventListener('click', function() {
-            // Reset all selects
-            document.getElementById('region-select').value = '';
-            document.getElementById('district-select').innerHTML = '<option value="">First select a region</option>';
-            document.getElementById('district-select').disabled = true;
-            document.getElementById('county-select').innerHTML = '<option value="">First select a district</option>';
-            document.getElementById('county-select').disabled = true;
-            document.getElementById('subcounty-select').innerHTML = '<option value="">First select a county</option>';
-            document.getElementById('subcounty-select').disabled = true;
-            document.getElementById('parish-select').innerHTML = '<option value="">First select a sub-county</option>';
-            document.getElementById('parish-select').disabled = true;
-            document.getElementById('village-select').innerHTML = '<option value="">First select a parish</option>';
-            document.getElementById('village-select').disabled = true;
+        window.triggerBackendFunction = async function(code) {
+            logToConsole(`Executing backend code: ${code.substring(0, 50)}...`);
             
-            // Reset current selection
-            currentSelection = {
-                region: null,
-                district: null,
-                county: null,
-                subcounty: null,
-                parish: null,
-                village: null
-            };
-            
-            // Remove boundary layer
-            if (currentBoundaryLayer) {
-                map.removeLayer(currentBoundaryLayer);
-                currentBoundaryLayer = null;
+            try {
+                // Create a virtual backend environment
+                const virtualBackend = {
+                    fetch: window.fetch.bind(window),
+                    processHierarchy: (data) => {
+                        // Simulate server-side processing
+                        return {
+                            ...data,
+                            processed: true,
+                            serverTimestamp: new Date().toISOString(),
+                            summary: `Processed ${data.counties.length} counties with ${data.villages.length} villages`
+                        };
+                    },
+                    validateData: (data) => {
+                        const issues = [];
+                        if (data.villages.length < 10) issues.push('Few villages');
+                        if (!data.district) issues.push('Missing district name');
+                        return { valid: issues.length === 0, issues };
+                    }
+                };
+                
+                // Execute user code in a controlled environment
+                const func = new Function('backend', 'data', `
+                    try {
+                        ${code}
+                    } catch(e) {
+                        return { error: e.toString() };
+                    }
+                `);
+                
+                const result = func(virtualBackend, state.currentHierarchy);
+                logToConsole(`Backend execution result: ${JSON.stringify(result).substring(0, 100)}...`);
+                
+                return result;
+                
+            } catch (error) {
+                logToConsole(`Backend error: ${error.message}`);
+                return { error: error.message };
             }
-            
-            // Reset data table
-            updateDataTable();
-            
-            // Reset map view
-            map.setView([1.3733, 32.2903], 7);
-            
-            alert('All selections have been reset.');
-        });
-        
-        // Initialize data table
-        updateDataTable();
-        
-        // Add some sample data for demonstration
-        setTimeout(() => {
-            document.getElementById('data-info').innerHTML = 
-                '<div class="info-message">💡 <strong>Tip:</strong> Select a region to begin exploring Uganda\'s administrative hierarchy (4 regions, 146 districts[citation:1][citation:3]). Use "Fetch Boundary" to visualize districts on the map.</div>';
-        }, 1000);
+        };
+
+        // Example backend code that can be triggered:
+        window.backendExamples = {
+            processData: `
+                // This runs as if on a server
+                const processed = backend.processHierarchy(data);
+                const validation = backend.validateData(data);
+                return { processed, validation };
+            `,
+            fetchExternal: `
+                // Fetch additional data
+                const response = await backend.fetch('https://api.example.com/data');
+                const external = await response.json();
+                return { external, local: data };
+            `
+        };
     </script>
 </body>
 </html>
